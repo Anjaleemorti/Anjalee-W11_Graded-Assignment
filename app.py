@@ -1,58 +1,58 @@
-
-
-### Import Libraries
-
-import pandas as pd
+from flask import Flask, render_template, request
+from implementation import randorm_forest_test, random_forest_train, random_forest_predict
+from sklearn.preprocessing import StandardScaler
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
-import warnings
-import pickle
-
-warnings.filterwarnings('ignore')
-
-### Import Datset
-df = pd.read_csv("data_breast-cancer-wiscons.csv")
-# we change the class values (at the column number 2) from B to 0 and from M to 1
-df.iloc[:,1].replace('B', 0,inplace=True)
-df.iloc[:,1].replace('M', 1,inplace=True)
-
-### Splitting Data
-
-X = df[['texture_mean','area_mean','concavity_mean','area_se','concavity_se','fractal_dimension_se','smoothness_worst','concavity_worst', 'symmetry_worst','fractal_dimension_worst']]
-y = df['diagnosis']
-
-from sklearn.model_selection import train_test_split
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size= 0.3, random_state=0)
-
-#### Data Preprocessing
-
-from sklearn.preprocessing import StandardScaler
-
-scaler = StandardScaler()
-
-x_train = scaler.fit_transform(X_train)
-x_test = scaler.transform(X_test)
+import pandas as pd
+from random_forest import accuracy
+from sklearn.metrics import accuracy_score
+from time import time
 
 
-##
-from sklearn.linear_model import LogisticRegression
-clf_lr = LogisticRegression()
-clf_lr.fit(x_train, y_train)
-predictions = clf_lr.predict(x_test)
+app = Flask(__name__)
+app.url_map.strict_slashes = False
 
-from sklearn.metrics import classification_report
-from sklearn.metrics import confusion_matrix
+@app.route('/')
+def index():
+	return render_template('home.html')
 
-print("Confusion Matrix : \n\n" , confusion_matrix(predictions,y_test))
+@app.route('/predict', methods=['POST']) 
+def login_user():
 
-print("Classification Report : \n\n" , classification_report(predictions,y_test),"\n")
+	data_points = list()
+	data = []
+	string = 'value'
+	for i in range(1,31):
+		data.append(float(request.form['value'+str(i)]))
 
+	for i in range(30):
+		data_points.append(data[i])
+		
+	print(data_points)
 
-pickle.dump(clf_lr, open('model.pkl', 'wb'))
-pickle.dump(scaler, open('scaler.pkl', 'wb'))
+	data_np = np.asarray(data, dtype = float)
+	data_np = data_np.reshape(1,-1)
+	out, acc, t = random_forest_predict(clf, data_np)
 
-model = pickle.load(open('model.pkl', 'rb'))
-print(model)
+	if(out==1):
+		output = 'Malignant'
+	else:
+		output = 'Benign'
+
+	acc_x = acc[0][0]
+	acc_y = acc[0][1]
+	if(acc_x>acc_y):
+		acc1 = acc_x
+	else:
+		acc1=acc_y
+	return render_template('result.html', output=output, accuracy=accuracy, time=t)
+
+	
+
+if __name__=='__main__':
+	global clf 
+	clf = random_forest_train()
+	randorm_forest_test(clf)
+	#print("Done")
+	app.run(debug=True)
 
