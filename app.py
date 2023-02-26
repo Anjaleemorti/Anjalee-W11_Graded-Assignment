@@ -55,3 +55,4 @@ pickle.dump(scaler, open('scaler.pkl', 'wb'))
 
 model = pickle.load(open('model.pkl', 'rb'))
 print(model)
+view rawmodel.py hosted with ❤ by GitHub
